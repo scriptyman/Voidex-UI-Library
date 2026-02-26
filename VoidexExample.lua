@@ -1,6 +1,6 @@
 -- Voidex UI Library - Example Script
 -- Load the library
-local Voidex = loadstring(game:HttpGet("YOUR_RAW_URL_HERE"))()
+local Voidex = loadstring(game:HttpGet("https://raw.githubusercontent.com/nothubman/Voidex-UI-Library/refs/heads/main/Library.lua"))()
 
 -- Voidex.Flags holds all current values, indexed by the Flag you pass to each element
 -- Example: Voidex.Flags["AimbotEnabled"] gives you the current toggle state
