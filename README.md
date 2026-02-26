@@ -219,10 +219,3 @@ Tab:CreateToggle({
         print(v)
     end
 })
-
-
----
-
-Voidex UI Library
-
-If you want, I can also add **images, badges, and animated previews** to make it look like a top-tier premium UI library README.
