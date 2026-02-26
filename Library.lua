@@ -171,7 +171,7 @@ do
     subtitle.Size = UDim2.new(0, 400, 0, 24)
     subtitle.Position = UDim2.new(0.5, -200, 0.5, 50)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "P R E M I U M    L I B R A R Y"
+    subtitle.Text = "U I   L I B R A R Y"
     subtitle.Font = Enum.Font.GothamBold
     subtitle.TextSize = 13
     subtitle.TextColor3 = C.violetLt
