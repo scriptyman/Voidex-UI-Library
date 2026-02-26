@@ -7,7 +7,7 @@ A modern, clean, and powerful Roblox UI library with full flag support, notifica
 ## 📥 Installation
 
 ```lua
-local Voidex = loadstring(game:HttpGet("YOUR_URL"))()
+local Voidex = loadstring(game:HttpGet("https://raw.githubusercontent.com/nothubman/Voidex-UI-Library/refs/heads/main/Library.lua"))()
 
 
 ---
