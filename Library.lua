@@ -7,6 +7,49 @@ local CoreGui          = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
 
+-- ── Lucide Icons Integration ─────────────────────────────────────────────────
+-- Loads the lucide-roblox sprite sheet pack so callers can pass short icon
+-- names (e.g. "settings", "star", "home") instead of raw rbxassetid numbers.
+local Lucide = nil
+local _lucideOk, _lucideResult = pcall(function()
+    return loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/deividcomsono/lucide-roblox-direct/refs/heads/main/source.lua"
+    ))()
+end)
+if _lucideOk and _lucideResult then
+    Lucide = _lucideResult
+end
+
+-- Helper: resolve an icon value to { Url, ImageRectSize, ImageRectOffset }.
+-- • If `icon` is a string  → look it up in Lucide (returns sprite data or nil)
+-- • If `icon` is a number  → treat as a plain rbxassetid (legacy behaviour)
+-- Returns a table { isLucide, url, rectSize, rectOffset } or nil.
+local function resolveIcon(icon)
+    if icon == nil then return nil end
+    if type(icon) == "string" then
+        if Lucide then
+            local data = Lucide.GetAsset(icon)
+            if data then
+                return {
+                    isLucide   = true,
+                    url        = data.Url,
+                    rectSize   = data.ImageRectSize,
+                    rectOffset = data.ImageRectOffset,
+                }
+            end
+        end
+        -- Fallback: string that is actually a numeric id
+        local num = tonumber(icon)
+        if num then
+            return { isLucide = false, url = "rbxassetid://" .. tostring(num) }
+        end
+        return nil
+    elseif type(icon) == "number" then
+        return { isLucide = false, url = "rbxassetid://" .. tostring(icon) }
+    end
+    return nil
+end
+
 local T = {
     -- Glass base: near-black with slight purple tint, used with transparency
     Bg            = Color3.fromRGB(12,   8,  28),
@@ -422,7 +465,7 @@ function Voidex.new(config)
     blur.Parent = game:GetService("Lighting")
     -- blur is toggled with GUI visibility (see toggle/close below)
 
-    -- â”€â”€ Outer glow container: gives the "floating with gap" premium look â”€â”€â”€â”€â”€â”€
+    -- ── Outer glow container: gives the "floating with gap" premium look ──────
     -- The container is slightly larger; win sits inset inside it with padding
     local winContainer = Instance.new("Frame", sg)
     winContainer.Name             = "WindowContainer"
@@ -441,7 +484,7 @@ function Voidex.new(config)
     outerGlow.BorderSizePixel = 0
     outerGlow.ZIndex = 1
     corner(outerGlow, 20)
-    -- No hard outer border â€” the outer glow frame itself defines the edge softly
+    -- No hard outer border — the outer glow frame itself defines the edge softly
 
     local win = Instance.new("Frame", winContainer)
     win.Name             = "Window"
@@ -465,7 +508,7 @@ function Voidex.new(config)
     local winStroke = Instance.new("UIStroke", win)
     winStroke.Color = Color3.fromRGB(180, 150, 255)
     winStroke.Thickness = 1
-    winStroke.Transparency = 0.68          -- very faint â€” just a frost shimmer
+    winStroke.Transparency = 0.68          -- very faint — just a frost shimmer
     winStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     local winStrokeGrad = Instance.new("UIGradient", winStroke)
     winStrokeGrad.Color = ColorSequence.new({
@@ -475,7 +518,7 @@ function Voidex.new(config)
         ColorSequenceKeypoint.new(1,    Color3.fromRGB(200, 180, 255)),  -- back to lavender
     })
 
-    -- â”€â”€ Frost texture overlay: randomised grain dots filling the whole pane â”€â”€
+    -- ── Frost texture overlay: randomised grain dots filling the whole pane ──
     local frostLayer = Instance.new("Frame", win)
     frostLayer.Name = "FrostLayer"
     frostLayer.Size = UDim2.new(1, 0, 1, 0)
@@ -501,7 +544,7 @@ function Voidex.new(config)
         corner(grain, 100)
     end
 
-    -- â”€â”€ Particles: more, slightly larger, float across entire window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    -- ── Particles: more, slightly larger, float across entire window ──────────
     local pBg = Instance.new("Frame", win)
     pBg.Size = UDim2.new(1, 0, 1, 0)
     pBg.BackgroundTransparency = 1
@@ -793,7 +836,7 @@ function Voidex.new(config)
         ColorSequenceKeypoint.new(1,   Color3.fromRGB(60,  28, 120)),
     }, 90)
 
-    -- Frosted vertical divider between sidebar and content â€” pill-shaped ends
+    -- Frosted vertical divider between sidebar and content — pill-shaped ends
     local sbLine = Instance.new("Frame", sidebar)
     sbLine.Size = UDim2.new(0, 2, 0.80, 0)
     sbLine.Position = UDim2.new(1, -1, 0.10, 0)
@@ -912,12 +955,17 @@ function Voidex:CreateTab(name, icon)
     local tabStroke = mkStroke(tabBtn, T.Border, 1, 1)
 
     local iconLbl = nil
-    if icon then
+    local _iconData = resolveIcon(icon)
+    if _iconData then
         iconLbl = Instance.new("ImageLabel", tabBtn)
         iconLbl.Size = UDim2.new(0, 16, 0, 16)
         iconLbl.Position = UDim2.new(0, 10, 0.5, -8)
         iconLbl.BackgroundTransparency = 1
-        iconLbl.Image = "rbxassetid://" .. tostring(icon)
+        iconLbl.Image = _iconData.url
+        if _iconData.isLucide then
+            iconLbl.ImageRectSize   = _iconData.rectSize
+            iconLbl.ImageRectOffset = _iconData.rectOffset
+        end
         iconLbl.ImageColor3 = T.TextMuted
         iconLbl.ZIndex = 14
     end
@@ -1015,7 +1063,7 @@ function Voidex:CreateTab(name, icon)
         row.ZIndex = 13
         row.LayoutOrder = tabObj._cnt
         corner(row, 8)
-        -- Barely-there frost rim â€” just a whisper of definition around each card
+        -- Barely-there frost rim — just a whisper of definition around each card
         local s = Instance.new("UIStroke", row)
         s.Color = Color3.fromRGB(170, 140, 255)
         s.Thickness = 1
@@ -1059,7 +1107,7 @@ function Voidex:CreateTab(name, icon)
     end
 
     local function leftAccentBar(row)
-        -- Frosted vertical frost line â€” separates left edge, no solid color
+        -- Frosted vertical frost line — separates left edge, no solid color
         local bar = Instance.new("Frame", row)
         bar.Size = UDim2.new(0, 2, 0.55, 0)
         bar.Position = UDim2.new(0, 2, 0.225, 0)
@@ -1969,6 +2017,15 @@ function Voidex:Notify(opts)
         end)
     end)
 end
+
+-- ── Public icon utilities ─────────────────────────────────────────────────────
+-- Voidex.GetIcon("star")  → { Url, ImageRectSize, ImageRectOffset } or nil
+-- Voidex.Icons            → list of all available lucide icon names
+Voidex.GetIcon = function(name)
+    if Lucide then return Lucide.GetAsset(name) end
+    return nil
+end
+Voidex.Icons = Lucide and Lucide.Icons or {}
 
 Voidex.CreateWindow = Voidex.new
 
