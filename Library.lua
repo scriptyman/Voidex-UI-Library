@@ -7,7 +7,7 @@ local CoreGui          = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
 
--- ── Lucide Icons Integration ─────────────────────────────────────────────────
+-- ── Lucide Icons Integration ────────────────────────────────────────────────
 -- Loads the lucide-roblox sprite sheet pack so callers can pass short icon
 -- names (e.g. "settings", "star", "home") instead of raw rbxassetid numbers.
 local Lucide = nil
