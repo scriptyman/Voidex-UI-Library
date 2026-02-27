@@ -8,11 +8,12 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
 
 local T = {
-    Bg            = Color3.fromRGB(5,   3,  14),
-    Surface       = Color3.fromRGB(11,  8,  26),
-    SurfaceHigh   = Color3.fromRGB(17, 13,  38),
-    SurfaceHover  = Color3.fromRGB(24, 19,  52),
-    SurfaceBtn    = Color3.fromRGB(20, 15,  44),
+    -- Glass base: near-black with slight purple tint, used with transparency
+    Bg            = Color3.fromRGB(12,   8,  28),
+    Surface       = Color3.fromRGB(20,  14,  42),
+    SurfaceHigh   = Color3.fromRGB(28,  20,  58),
+    SurfaceHover  = Color3.fromRGB(38,  28,  76),
+    SurfaceBtn    = Color3.fromRGB(30,  22,  60),
     Accent        = Color3.fromRGB(124, 58, 237),
     AccentMid     = Color3.fromRGB(148, 90, 248),
     AccentLt      = Color3.fromRGB(170,140, 252),
@@ -23,14 +24,15 @@ local T = {
     Indigo        = Color3.fromRGB( 99,102, 241),
     Gold          = Color3.fromRGB(251,191,  36),
     White         = Color3.fromRGB(248,246, 255),
-    TextSub       = Color3.fromRGB(160,138, 200),
-    TextMuted     = Color3.fromRGB( 85, 68, 120),
-    Border        = Color3.fromRGB( 34, 24,  62),
-    BorderHot     = Color3.fromRGB( 75, 50, 140),
+    TextSub       = Color3.fromRGB(190,168, 230),
+    TextMuted     = Color3.fromRGB(110,  88, 160),
+    -- Glass borders: lighter, more visible for frosted-glass edge definition
+    Border        = Color3.fromRGB( 90,  65, 160),
+    BorderHot     = Color3.fromRGB(140, 100, 220),
     Success       = Color3.fromRGB( 34,197,  94),
     Danger        = Color3.fromRGB(239, 68,  68),
     Warn          = Color3.fromRGB(234,179,   8),
-    Sidebar       = Color3.fromRGB( 8,  5,  20),
+    Sidebar       = Color3.fromRGB( 14,   9,  32),
 }
 
 local _loaderDone = false
@@ -171,7 +173,7 @@ do
     subtitle.Size = UDim2.new(0, 400, 0, 24)
     subtitle.Position = UDim2.new(0.5, -200, 0.5, 50)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "U I   L I B R A R Y"
+    subtitle.Text = "U I    L I B R A R Y"
     subtitle.Font = Enum.Font.GothamBold
     subtitle.TextSize = 13
     subtitle.TextColor3 = C.violetLt
@@ -412,56 +414,117 @@ function Voidex.new(config)
     if not sg.Parent then sg.Parent = PlayerGui end
     self._sg = sg
 
-    local win = Instance.new("Frame", sg)
+    -- Subtle blur behind the glass UI
+    local blur = Instance.new("BlurEffect")
+    blur.Name = "VoidexBlur"
+    blur.Size = 12         -- soft frosted blur (0 = none, 56 = max)
+    blur.Enabled = true
+    blur.Parent = game:GetService("Lighting")
+    -- blur is toggled with GUI visibility (see toggle/close below)
+
+    -- â”€â”€ Outer glow container: gives the "floating with gap" premium look â”€â”€â”€â”€â”€â”€
+    -- The container is slightly larger; win sits inset inside it with padding
+    local winContainer = Instance.new("Frame", sg)
+    winContainer.Name             = "WindowContainer"
+    winContainer.Size             = UDim2.new(0, 490, 0, 360)   -- 10px gap on each side
+    winContainer.Position         = UDim2.new(0.5, -245, 0.5, -180)
+    winContainer.BackgroundTransparency = 1
+    winContainer.BorderSizePixel  = 0
+    winContainer.ZIndex           = 1
+
+    -- Soft outer glow ring (purple haze behind the glass)
+    local outerGlow = Instance.new("Frame", winContainer)
+    outerGlow.Name = "OuterGlow"
+    outerGlow.Size = UDim2.new(1, 0, 1, 0)
+    outerGlow.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
+    outerGlow.BackgroundTransparency = 0.82
+    outerGlow.BorderSizePixel = 0
+    outerGlow.ZIndex = 1
+    corner(outerGlow, 20)
+    -- No hard outer border â€” the outer glow frame itself defines the edge softly
+
+    local win = Instance.new("Frame", winContainer)
     win.Name             = "Window"
-    win.Size             = UDim2.new(0, 530, 0, 375)
-    win.Position         = UDim2.new(0.5, -265, 0.5, -187)
-    win.BackgroundColor3 = T.Bg
+    win.Size             = UDim2.new(0, 470, 0, 340)
+    win.Position         = UDim2.new(0.5, -235, 0.5, -170)   -- centred inside container
+    win.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+    win.BackgroundTransparency = 0.72
     win.BorderSizePixel  = 0
     win.ClipsDescendants = true
-    corner(win, 14)
+    corner(win, 18)    -- slightly more rounded for premium feel
     self._win = win
 
+    -- Glass fill: subtle purple gradient shimmer
     gradFill(win, {
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 7, 22)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(5,  3, 12)),
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(105, 58, 210)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80,  40, 160)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(58,  26, 118)),
     }, 145)
 
+    -- Frost rim: barely-there edge, just enough to define the glass without looking like a border
     local winStroke = Instance.new("UIStroke", win)
-    winStroke.Thickness = 1.5
+    winStroke.Color = Color3.fromRGB(180, 150, 255)
+    winStroke.Thickness = 1
+    winStroke.Transparency = 0.68          -- very faint â€” just a frost shimmer
     winStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     local winStrokeGrad = Instance.new("UIGradient", winStroke)
     winStrokeGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0,    T.Cyan),
-        ColorSequenceKeypoint.new(0.25, T.Indigo),
-        ColorSequenceKeypoint.new(0.5,  T.Accent),
-        ColorSequenceKeypoint.new(0.75, T.Pink),
-        ColorSequenceKeypoint.new(1,    T.Cyan),
+        ColorSequenceKeypoint.new(0,    Color3.fromRGB(200, 180, 255)),  -- top: bright lavender
+        ColorSequenceKeypoint.new(0.35, Color3.fromRGB(140, 100, 240)),  -- left: mid violet
+        ColorSequenceKeypoint.new(0.65, Color3.fromRGB(100, 140, 255)),  -- bottom: icy blue
+        ColorSequenceKeypoint.new(1,    Color3.fromRGB(200, 180, 255)),  -- back to lavender
     })
 
+    -- â”€â”€ Frost texture overlay: randomised grain dots filling the whole pane â”€â”€
+    local frostLayer = Instance.new("Frame", win)
+    frostLayer.Name = "FrostLayer"
+    frostLayer.Size = UDim2.new(1, 0, 1, 0)
+    frostLayer.BackgroundTransparency = 1
+    frostLayer.ZIndex = 2
+    frostLayer.ClipsDescendants = true
+    -- Grain dots (static frost texture)
+    local frostColors = {
+        Color3.fromRGB(200, 170, 255),
+        Color3.fromRGB(160, 120, 240),
+        Color3.fromRGB(220, 200, 255),
+        Color3.fromRGB(140,  90, 220),
+    }
+    for _ = 1, 90 do
+        local grain = Instance.new("Frame", frostLayer)
+        local gsz = math.random(1, 3)
+        grain.Size = UDim2.new(0, gsz, 0, gsz)
+        grain.Position = UDim2.new(math.random(0, 100)/100, 0, math.random(0, 100)/100, 0)
+        grain.BackgroundColor3 = frostColors[math.random(1, #frostColors)]
+        grain.BackgroundTransparency = math.random(72, 92)/100
+        grain.BorderSizePixel = 0
+        grain.ZIndex = 2
+        corner(grain, 100)
+    end
+
+    -- â”€â”€ Particles: more, slightly larger, float across entire window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     local pBg = Instance.new("Frame", win)
     pBg.Size = UDim2.new(1, 0, 1, 0)
     pBg.BackgroundTransparency = 1
-    pBg.ZIndex = 1
+    pBg.ZIndex = 3
     pBg.ClipsDescendants = true
 
-    local pColors = { T.AccentLt, T.AccentGlow, T.Pink, T.Indigo, T.Cyan }
+    local pColors = { T.AccentLt, T.AccentGlow, T.Pink, T.Indigo, T.Cyan, Color3.fromRGB(200, 170, 255) }
     local particles = {}
-    for i = 1, 28 do
+    for i = 1, 55 do
         local dot = Instance.new("Frame", pBg)
-        local sz = math.random(1, 2)
+        local sz = math.random(1, 4)   -- larger range: 1-4px
         dot.Size = UDim2.new(0, sz, 0, sz)
-        dot.Position = UDim2.new(math.random(3, 97)/100, 0, math.random(3, 97)/100, 0)
+        dot.Position = UDim2.new(math.random(2, 98)/100, 0, math.random(2, 98)/100, 0)
         dot.BackgroundColor3 = pColors[math.random(1, #pColors)]
-        dot.BackgroundTransparency = math.random(65, 85)/100
+        dot.BackgroundTransparency = math.random(55, 80)/100
         dot.BorderSizePixel = 0
-        dot.ZIndex = 2
+        dot.ZIndex = 4
         corner(dot, 100)
         table.insert(particles, {
             f = dot, ox = dot.Position.X.Scale, oy = dot.Position.Y.Scale,
             phase = math.random() * math.pi * 2,
-            spd   = 0.08 + math.random() * 0.22,
-            amp   = 0.007 + math.random() * 0.013,
+            spd   = 0.06 + math.random() * 0.28,
+            amp   = 0.008 + math.random() * 0.018,
         })
     end
 
@@ -469,30 +532,37 @@ function Voidex.new(config)
 
     local titleBar = Instance.new("Frame", win)
     titleBar.Name = "TitleBar"
-    titleBar.Size = UDim2.new(1, 0, 0, 62)
+    titleBar.Size = UDim2.new(1, 0, 0, 48)   -- exactly matches content offset so no overlap
     titleBar.Position = UDim2.new(0, 0, 0, 0)
-    titleBar.BackgroundColor3 = T.Surface
+    titleBar.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+    titleBar.BackgroundTransparency = 0.72
     titleBar.BorderSizePixel = 0
     titleBar.ZIndex = 15
     titleBar.Active = true
-    corner(titleBar, 14)
+    corner(titleBar, 12)
     gradFill(titleBar, {
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(17, 12, 36)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(10,  7, 22)),
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(100, 55, 200)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80,  40, 160)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(60,  28, 120)),
     }, 90)
 
+
+    -- Frosted separator: sits right at the titleBar/content boundary, fully rounded pill ends
     local sep = Instance.new("Frame", win)
-    sep.Size = UDim2.new(1, 0, 0, 1)
-    sep.Position = UDim2.new(0, 0, 0, 47)
-    sep.BackgroundColor3 = T.Accent
+    sep.Size = UDim2.new(1, -40, 0, 3)
+    sep.Position = UDim2.new(0, 20, 0, 47)
+    sep.BackgroundColor3 = Color3.fromRGB(180, 150, 255)
+    sep.BackgroundTransparency = 0.55
     sep.BorderSizePixel = 0
     sep.ZIndex = 16
+    corner(sep, 100)                       -- fully pill-shaped/rounded ends
     gradFill(sep, {
-        ColorSequenceKeypoint.new(0,    Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.1,  T.Indigo),
-        ColorSequenceKeypoint.new(0.5,  T.Accent),
-        ColorSequenceKeypoint.new(0.9,  T.Pink),
-        ColorSequenceKeypoint.new(1,    Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(0,    Color3.fromRGB(0,   0,   0)),
+        ColorSequenceKeypoint.new(0.08, Color3.fromRGB(140, 110, 240)),
+        ColorSequenceKeypoint.new(0.4,  Color3.fromRGB(180, 150, 255)),
+        ColorSequenceKeypoint.new(0.6,  Color3.fromRGB(140, 120, 255)),
+        ColorSequenceKeypoint.new(0.92, Color3.fromRGB(100, 140, 255)),
+        ColorSequenceKeypoint.new(1,    Color3.fromRGB(0,   0,   0)),
     }, 0)
 
     local dot = Instance.new("Frame", titleBar)
@@ -508,20 +578,28 @@ function Voidex.new(config)
     ds.Transparency = 0.25
 
     local titleTxt = Instance.new("TextLabel", titleBar)
-    titleTxt.Size = UDim2.new(0, 300, 0, 48)
+    titleTxt.Size = UDim2.new(0, 300, 1, 0)
     titleTxt.Position = UDim2.new(0, 32, 0, 0)
     titleTxt.BackgroundTransparency = 1
     titleTxt.Text = self.Name
     titleTxt.Font = Enum.Font.GothamBlack
     titleTxt.TextSize = 15
-    titleTxt.TextColor3 = T.White
+    titleTxt.TextColor3 = Color3.fromRGB(220, 200, 255)  -- soft lavender-white, readable on glass
+    titleTxt.TextStrokeColor3 = Color3.fromRGB(60, 20, 120)
+    titleTxt.TextStrokeTransparency = 0.4                -- subtle dark purple stroke for contrast
     titleTxt.TextXAlignment = Enum.TextXAlignment.Left
     titleTxt.ZIndex = 17
-    accentFill(titleTxt, 0)
+    -- Darker purple gradient so title pops on glass background
+    local titleGrad = Instance.new("UIGradient", titleTxt)
+    titleGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(210, 185, 255)),  -- light violet
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 145, 255)),  -- mid purple
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(140, 100, 230)),  -- darker purple
+    })
 
     local badge = Instance.new("Frame", titleBar)
     badge.Size = UDim2.new(0, 62, 0, 16)
-    badge.Position = UDim2.new(0, 32 + (math.min(#self.Name, 20) * 8) + 6, 0, 16)
+    badge.Position = UDim2.new(0, 32 + (math.min(#self.Name, 20) * 8) + 6, 0.5, -8)
     badge.BackgroundColor3 = T.Accent
     badge.BackgroundTransparency = 0.55
     badge.BorderSizePixel = 0
@@ -560,14 +638,57 @@ function Voidex.new(config)
     closeBtn.MouseButton1Click:Connect(function()
         tw(win, { Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1 },
             0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+        tw(outerGlow, { BackgroundTransparency = 1 }, 0.3)
         task.delay(0.32, function()
-            win.Visible = false
-            win.Size = UDim2.new(0, 530, 0, 375)
-            win.BackgroundTransparency = 0
+            winContainer.Visible = false
+            blur.Enabled = false          -- stop blurring when GUI hidden
+            win.Size = UDim2.new(0, 470, 0, 340)
+            win.BackgroundTransparency = 0.72
+            outerGlow.BackgroundTransparency = 0.82
         end)
     end)
 
-    makeDraggable(win, titleBar)
+    -- Full-window drag: drag from any blank area of the window.
+    -- Child buttons/sliders consume their own InputBegan so they won't bleed here.
+    -- We move winContainer so win stays centred inside it.
+    do
+        local dragging  = false
+        local dragInput = nil
+        local dragStart = nil
+        local startPos  = nil
+
+        win.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.MouseButton1
+            or inp.UserInputType == Enum.UserInputType.Touch then
+                dragging  = true
+                dragInput = inp
+                dragStart = inp.Position
+                startPos  = winContainer.Position
+            end
+        end)
+
+        win.InputEnded:Connect(function(inp)
+            if inp == dragInput then
+                dragging  = false
+                dragInput = nil
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(inp)
+            if dragging and inp == dragInput then
+                local delta = inp.Position - dragStart
+                winContainer.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+    end
+
+    -- Also keep titleBar dragging (titleBar is always a clean drag target)
+    makeDraggable(winContainer, titleBar)
 
     local toggleSg = Instance.new("ScreenGui")
     toggleSg.Name = "VoidexToggle"
@@ -628,16 +749,22 @@ function Voidex.new(config)
     toggleBtn.MouseButton1Click:Connect(function()
         guiVisible = not guiVisible
         if guiVisible then
+            winContainer.Visible = true
             win.Visible = true
-            tw(win, { Size = UDim2.new(0, 530, 0, 375), BackgroundTransparency = 0 },
+            blur.Enabled = true           -- restore blur when GUI shown
+            tw(win, { Size = UDim2.new(0, 470, 0, 340), BackgroundTransparency = 0.72 },
                 0.35, Enum.EasingStyle.Back)
+            tw(outerGlow, { BackgroundTransparency = 0.82 }, 0.35)
         else
             tw(win, { Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1 },
                 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+            tw(outerGlow, { BackgroundTransparency = 1 }, 0.3)
             task.delay(0.32, function()
-                win.Visible = false
-                win.Size = UDim2.new(0, 530, 0, 375)
-                win.BackgroundTransparency = 0
+                winContainer.Visible = false
+                blur.Enabled = false      -- stop blurring when GUI hidden
+                win.Size = UDim2.new(0, 470, 0, 340)
+                win.BackgroundTransparency = 0.72
+                outerGlow.BackgroundTransparency = 0.82
             end)
         end
     end)
@@ -655,27 +782,32 @@ function Voidex.new(config)
     local sidebar = Instance.new("Frame", content)
     sidebar.Name = "Sidebar"
     sidebar.Size = UDim2.new(0, 132, 1, 0)
-    sidebar.BackgroundColor3 = T.Sidebar
+    sidebar.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+    sidebar.BackgroundTransparency = 0.72
     sidebar.BorderSizePixel = 0
     sidebar.ZIndex = 11
     corner(sidebar, 14)
     gradFill(sidebar, {
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 7, 24)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(6,  4, 16)),
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(100, 55, 200)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80,  40, 160)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(60,  28, 120)),
     }, 90)
 
+    -- Frosted vertical divider between sidebar and content â€” pill-shaped ends
     local sbLine = Instance.new("Frame", sidebar)
-    sbLine.Size = UDim2.new(0, 1, 1, 0)
-    sbLine.Position = UDim2.new(1, -1, 0, 0)
-    sbLine.BackgroundColor3 = T.Accent
+    sbLine.Size = UDim2.new(0, 2, 0.80, 0)
+    sbLine.Position = UDim2.new(1, -1, 0.10, 0)
+    sbLine.BackgroundColor3 = Color3.fromRGB(170, 140, 255)
+    sbLine.BackgroundTransparency = 0.55
     sbLine.BorderSizePixel = 0
     sbLine.ZIndex = 12
+    corner(sbLine, 100)                    -- fully pill-shaped
     gradFill(sbLine, {
-        ColorSequenceKeypoint.new(0,    Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.2,  T.Indigo),
-        ColorSequenceKeypoint.new(0.5,  T.Accent),
-        ColorSequenceKeypoint.new(0.8,  T.Pink),
-        ColorSequenceKeypoint.new(1,    Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(0,    Color3.fromRGB(0,   0,   0)),
+        ColorSequenceKeypoint.new(0.12, Color3.fromRGB(130, 100, 240)),
+        ColorSequenceKeypoint.new(0.5,  Color3.fromRGB(170, 140, 255)),
+        ColorSequenceKeypoint.new(0.88, Color3.fromRGB(100, 130, 255)),
+        ColorSequenceKeypoint.new(1,    Color3.fromRGB(0,   0,   0)),
     }, 90)
 
     local tabList = Instance.new("ScrollingFrame", sidebar)
@@ -734,9 +866,11 @@ function Voidex.new(config)
 
     win.Size = UDim2.new(0, 530, 0, 0)
     win.BackgroundTransparency = 1
+    outerGlow.BackgroundTransparency = 1
     task.defer(function()
-        tw(win, { Size = UDim2.new(0, 530, 0, 375), BackgroundTransparency = 0 },
+        tw(win, { Size = UDim2.new(0, 470, 0, 340), BackgroundTransparency = 0.72 },
             0.5, Enum.EasingStyle.Back)
+        tw(outerGlow, { BackgroundTransparency = 0.82 }, 0.5, Enum.EasingStyle.Back)
     end)
 
     return self
@@ -749,8 +883,8 @@ function Voidex:CreateTab(name, icon)
     local tabBtn = Instance.new("TextButton", self._tabList)
     tabBtn.Name = "Tab_" .. name
     tabBtn.Size = UDim2.new(1, 0, 0, 36)
-    tabBtn.BackgroundColor3 = T.SurfaceHigh
-    tabBtn.BackgroundTransparency = 0.45
+    tabBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+    tabBtn.BackgroundTransparency = 0.72
     tabBtn.Text = ""
     tabBtn.ZIndex = 13
     tabBtn.BorderSizePixel = 0
@@ -831,7 +965,7 @@ function Voidex:CreateTab(name, icon)
             t._page.Visible = false
             tw(t._ind,    { BackgroundTransparency = 1 },   0.2)
             tw(t._glow,   { BackgroundTransparency = 1 },   0.2)
-            tw(t._btn,    { BackgroundTransparency = 0.45 }, 0.2)
+            tw(t._btn,    { BackgroundTransparency = 0.72 }, 0.2)
             tw(t._lbl,    { TextColor3 = T.TextMuted },      0.2)
             tw(t._stroke, { Transparency = 1 },             0.2)
             if t._icon then tw(t._icon, { ImageColor3 = T.TextMuted }, 0.2) end
@@ -839,7 +973,7 @@ function Voidex:CreateTab(name, icon)
         page.Visible = true
         tw(indicator,   { BackgroundTransparency = 0 },   0.25)
         tw(tabGlow,     { BackgroundTransparency = 0.88 }, 0.25)
-        tw(tabBtn,      { BackgroundTransparency = 0.12 }, 0.25)
+        tw(tabBtn,      { BackgroundTransparency = 0.55 }, 0.25)
         tw(tabLbl,      { TextColor3 = T.White },          0.25)
         tw(tabStroke,   { Transparency = 0.45 },          0.25)
         if iconLbl then tw(iconLbl, { ImageColor3 = T.AccentLt }, 0.25) end
@@ -858,12 +992,12 @@ function Voidex:CreateTab(name, icon)
     end)
     tabBtn.MouseEnter:Connect(function()
         if page.Visible then return end
-        tw(tabBtn, { BackgroundTransparency = 0.28 }, 0.12)
+        tw(tabBtn, { BackgroundTransparency = 0.62 }, 0.12)
         tw(tabLbl, { TextColor3 = T.TextSub }, 0.12)
     end)
     tabBtn.MouseLeave:Connect(function()
         if page.Visible then return end
-        tw(tabBtn, { BackgroundTransparency = 0.45 }, 0.12)
+        tw(tabBtn, { BackgroundTransparency = 0.72 }, 0.12)
         tw(tabLbl, { TextColor3 = T.TextMuted }, 0.12)
     end)
 
@@ -875,20 +1009,30 @@ function Voidex:CreateTab(name, icon)
         local row = Instance.new("Frame", page)
         row.Name = "Item_" .. tabObj._cnt
         row.Size = UDim2.new(1, 0, 0, h)
-        row.BackgroundColor3 = T.SurfaceHigh
+        row.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+        row.BackgroundTransparency = 0.72
         row.BorderSizePixel = 0
         row.ZIndex = 13
         row.LayoutOrder = tabObj._cnt
         corner(row, 8)
-        mkStroke(row, T.Border, 1, 0.55)
+        -- Barely-there frost rim â€” just a whisper of definition around each card
+        local s = Instance.new("UIStroke", row)
+        s.Color = Color3.fromRGB(170, 140, 255)
+        s.Thickness = 1
+        s.Transparency = 0.72          -- very faint, almost invisible
+        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         return row
     end
 
     local function hoverRow(row, normalCol, hoverCol)
-        normalCol = normalCol or T.SurfaceHigh
-        hoverCol  = hoverCol  or T.SurfaceHover
-        row.MouseEnter:Connect(function() tw(row, { BackgroundColor3 = hoverCol  }, 0.14) end)
-        row.MouseLeave:Connect(function() tw(row, { BackgroundColor3 = normalCol }, 0.14) end)
+        normalCol = normalCol or Color3.fromRGB(32, 20, 70)
+        hoverCol  = hoverCol  or Color3.fromRGB(52, 34, 100)
+        row.MouseEnter:Connect(function()
+            tw(row, { BackgroundColor3 = hoverCol, BackgroundTransparency = 0.60 }, 0.14)
+        end)
+        row.MouseLeave:Connect(function()
+            tw(row, { BackgroundColor3 = normalCol, BackgroundTransparency = 0.72 }, 0.14)
+        end)
     end
 
     local function rowLabel(row, text, xOff)
@@ -915,14 +1059,23 @@ function Voidex:CreateTab(name, icon)
     end
 
     local function leftAccentBar(row)
+        -- Frosted vertical frost line â€” separates left edge, no solid color
         local bar = Instance.new("Frame", row)
-        bar.Size = UDim2.new(0, 3, 0.6, 0)
-        bar.Position = UDim2.new(0, 0, 0.2, 0)
-        bar.BackgroundColor3 = T.Accent
+        bar.Size = UDim2.new(0, 2, 0.55, 0)
+        bar.Position = UDim2.new(0, 2, 0.225, 0)
+        bar.BackgroundColor3 = Color3.fromRGB(180, 150, 255)
+        bar.BackgroundTransparency = 0.40
         bar.BorderSizePixel = 0
         bar.ZIndex = 14
-        corner(bar, 2)
-        accentFill(bar, 90)
+        corner(bar, 1)
+        -- Fade top and bottom like frost drip
+        gradFill(bar, {
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(0,   0,   0)),
+            ColorSequenceKeypoint.new(0.2, Color3.fromRGB(160, 130, 255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 170, 255)),
+            ColorSequenceKeypoint.new(0.8, Color3.fromRGB(120, 100, 240)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(0,   0,   0)),
+        }, 90)
         return bar
     end
 
@@ -964,12 +1117,13 @@ function Voidex:CreateTab(name, icon)
     function tabObj:CreateButton(opts)
         opts = opts or {}
         local row = baseRow(40)
-        row.BackgroundColor3 = T.SurfaceBtn
+        row.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+        row.BackgroundTransparency = 0.72
         leftAccentBar(row)
 
         gradFill(row, {
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 20, 56)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 13, 40)),
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 55, 200)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB( 60, 28, 120)),
         }, 0)
 
         local lbl = rowLabel(row, opts.Name or "Button")
@@ -988,21 +1142,23 @@ function Voidex:CreateTab(name, icon)
 
         local over = clickOverlay(row)
         over.MouseEnter:Connect(function()
-            tw(row,   { BackgroundColor3 = T.SurfaceHover }, 0.14)
+            tw(row,   { BackgroundColor3 = Color3.fromRGB(60, 38, 120), BackgroundTransparency = 0.60 }, 0.14)
             tw(lbl,   { TextColor3 = T.AccentGlow },         0.14)
             tw(arrow, { TextColor3 = T.AccentLt },           0.14)
             accentFill(lbl, 0)
         end)
         over.MouseLeave:Connect(function()
-            tw(row,   { BackgroundColor3 = T.SurfaceBtn }, 0.14)
+            tw(row,   { BackgroundColor3 = Color3.fromRGB(38, 24, 80), BackgroundTransparency = 0.72 }, 0.14)
             tw(lbl,   { TextColor3 = T.White },             0.14)
             tw(arrow, { TextColor3 = T.TextMuted },         0.14)
         end)
         over.MouseButton1Click:Connect(function()
             local mp = UserInputService:GetMouseLocation()
             ripple(row, mp.X, mp.Y)
-            tw(row, { BackgroundColor3 = T.SurfaceHover }, 0.06)
-            task.delay(0.12, function() tw(row, { BackgroundColor3 = T.SurfaceBtn }, 0.2) end)
+            tw(row, { BackgroundColor3 = Color3.fromRGB(60, 38, 120), BackgroundTransparency = 0.60 }, 0.06)
+            task.delay(0.12, function()
+                tw(row, { BackgroundColor3 = Color3.fromRGB(38, 24, 80), BackgroundTransparency = 0.72 }, 0.2)
+            end)
             if opts.Callback then task.spawn(opts.Callback) end
         end)
     end
@@ -1236,11 +1392,16 @@ function Voidex:CreateTab(name, icon)
         local inputBox = Instance.new("Frame", row)
         inputBox.Size = UDim2.new(0.54, 0, 0, 26)
         inputBox.Position = UDim2.new(0.44, 0, 0.5, -13)
-        inputBox.BackgroundColor3 = T.Bg
+        inputBox.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+        inputBox.BackgroundTransparency = 0.72
         inputBox.BorderSizePixel = 0
         inputBox.ZIndex = 14
         corner(inputBox, 6)
-        local ibStroke = mkStroke(inputBox, T.Border, 1, 0.35)
+        local ibStroke = Instance.new("UIStroke", inputBox)
+        ibStroke.Color = Color3.fromRGB(110, 70, 200)
+        ibStroke.Thickness = 1
+        ibStroke.Transparency = 0.40
+        ibStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
         local textBox = Instance.new("TextBox", inputBox)
         textBox.Size = UDim2.new(1, -16, 1, 0)
@@ -1258,11 +1419,11 @@ function Voidex:CreateTab(name, icon)
 
         textBox.Focused:Connect(function()
             tw(ibStroke, { Color = T.Accent, Transparency = 0 }, 0.18)
-            tw(inputBox, { BackgroundColor3 = T.SurfaceHigh }, 0.18)
+            tw(inputBox, { BackgroundColor3 = Color3.fromRGB(80, 40, 160), BackgroundTransparency = 0.60 }, 0.18)
         end)
         textBox.FocusLost:Connect(function(enter)
             tw(ibStroke, { Color = T.Border, Transparency = 0.35 }, 0.18)
-            tw(inputBox, { BackgroundColor3 = T.Bg }, 0.18)
+            tw(inputBox, { BackgroundColor3 = Color3.fromRGB(80, 40, 160), BackgroundTransparency = 0.72 }, 0.18)
             value = textBox.Text
             if flag then Voidex.Flags[flag] = value end
             if opts.Callback then task.spawn(opts.Callback, value, enter) end
@@ -1282,12 +1443,17 @@ function Voidex:CreateTab(name, icon)
         local container = Instance.new("Frame", page)
         container.Name = "DD_" .. order
         container.Size = UDim2.new(1, 0, 0, 42)
-        container.BackgroundColor3 = T.SurfaceHigh
+        container.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+        container.BackgroundTransparency = 0.72
         container.BorderSizePixel = 0
         container.ZIndex = 20
         container.LayoutOrder = order
         corner(container, 8)
-        mkStroke(container, T.Border, 1, 0.5)
+        local ddStroke = Instance.new("UIStroke", container)
+        ddStroke.Color = Color3.fromRGB(110, 70, 200)
+        ddStroke.Thickness = 1
+        ddStroke.Transparency = 0.40
+        ddStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         leftAccentBar(container)
 
         local lbl = rowLabel(container, opts.Name or "Dropdown")
@@ -1296,11 +1462,16 @@ function Voidex:CreateTab(name, icon)
         local selBox = Instance.new("Frame", container)
         selBox.Size = UDim2.new(0, 118, 0, 26)
         selBox.Position = UDim2.new(1, -130, 0.5, -13)
-        selBox.BackgroundColor3 = T.Bg
+        selBox.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+        selBox.BackgroundTransparency = 0.72
         selBox.BorderSizePixel = 0
         selBox.ZIndex = 21
         corner(selBox, 6)
-        mkStroke(selBox, T.Border, 1, 0.4)
+        local sbStroke = Instance.new("UIStroke", selBox)
+        sbStroke.Color = Color3.fromRGB(110, 70, 200)
+        sbStroke.Thickness = 1
+        sbStroke.Transparency = 0.40
+        sbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
         local selLbl = Instance.new("TextLabel", selBox)
         selLbl.Size = UDim2.new(1, -22, 1, 0)
@@ -1327,13 +1498,18 @@ function Voidex:CreateTab(name, icon)
         local dropFrame = Instance.new("Frame", container)
         dropFrame.Size = UDim2.new(0, 118, 0, 0)
         dropFrame.Position = UDim2.new(1, -130, 1, 3)
-        dropFrame.BackgroundColor3 = T.Surface
+        dropFrame.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+        dropFrame.BackgroundTransparency = 0.72
         dropFrame.BorderSizePixel = 0
         dropFrame.ZIndex = 35
         dropFrame.ClipsDescendants = true
         dropFrame.Visible = false
         corner(dropFrame, 7)
-        mkStroke(dropFrame, T.Accent, 1, 0.5)
+        local dfStroke = Instance.new("UIStroke", dropFrame)
+        dfStroke.Color = Color3.fromRGB(130, 80, 220)
+        dfStroke.Thickness = 1
+        dfStroke.Transparency = 0.35
+        dfStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
         local dropLayout = Instance.new("UIListLayout", dropFrame)
         dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -1451,12 +1627,17 @@ function Voidex:CreateTab(name, icon)
             pickerFrame = Instance.new("Frame", row)
             pickerFrame.Size = UDim2.new(0, 230, 0, 0)
             pickerFrame.Position = UDim2.new(0, 0, 1, 5)
-            pickerFrame.BackgroundColor3 = T.Surface
+            pickerFrame.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+            pickerFrame.BackgroundTransparency = 0.72
             pickerFrame.BorderSizePixel = 0
             pickerFrame.ZIndex = 55
             pickerFrame.ClipsDescendants = true
             corner(pickerFrame, 9)
-            accentStroke(pickerFrame, 1)
+            local pfStroke = Instance.new("UIStroke", pickerFrame)
+            pfStroke.Color = Color3.fromRGB(130, 80, 220)
+            pfStroke.Thickness = 1
+            pfStroke.Transparency = 0.35
+            pfStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
             local pPad = Instance.new("UIPadding", pickerFrame)
             pPad.PaddingAll = UDim.new(0, 10)
@@ -1532,11 +1713,16 @@ function Voidex:CreateTab(name, icon)
         local keyBox = Instance.new("Frame", row)
         keyBox.Size = UDim2.new(0, 82, 0, 26)
         keyBox.Position = UDim2.new(1, -94, 0.5, -13)
-        keyBox.BackgroundColor3 = T.Bg
+        keyBox.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+        keyBox.BackgroundTransparency = 0.72
         keyBox.BorderSizePixel = 0
         keyBox.ZIndex = 14
         corner(keyBox, 6)
-        local kbStroke = mkStroke(keyBox, T.Border, 1, 0.4)
+        local kbStroke = Instance.new("UIStroke", keyBox)
+        kbStroke.Color = Color3.fromRGB(110, 70, 200)
+        kbStroke.Thickness = 1
+        kbStroke.Transparency = 0.40
+        kbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
         local keyLbl = Instance.new("TextLabel", keyBox)
         keyLbl.Size = UDim2.new(1, 0, 1, 0)
@@ -1556,7 +1742,7 @@ function Voidex:CreateTab(name, icon)
             keyLbl.Text = "..."
             keyLbl.TextColor3 = T.Gold
             tw(kbStroke, { Color = T.Gold, Transparency = 0 }, 0.15)
-            tw(keyBox, { BackgroundColor3 = T.SurfaceHigh }, 0.15)
+            tw(keyBox, { BackgroundColor3 = Color3.fromRGB(80, 40, 160), BackgroundTransparency = 0.60 }, 0.15)
 
             listenerConn = UserInputService.InputBegan:Connect(function(inp, gpe)
                 if gpe then return end
@@ -1565,7 +1751,7 @@ function Voidex:CreateTab(name, icon)
                     keyLbl.Text = keyval
                     keyLbl.TextColor3 = T.AccentLt
                     tw(kbStroke, { Color = T.Border, Transparency = 0.4 }, 0.15)
-                    tw(keyBox, { BackgroundColor3 = T.Bg }, 0.15)
+                    tw(keyBox, { BackgroundColor3 = Color3.fromRGB(80, 40, 160), BackgroundTransparency = 0.72 }, 0.15)
                     if flag then Voidex.Flags[flag] = keyval end
                     if opts.Callback then task.spawn(opts.Callback, inp.KeyCode) end
                     listening = false
@@ -1614,13 +1800,17 @@ function Voidex:CreateTab(name, icon)
         container.Name = "Para_" .. tabObj._cnt
         container.Size = UDim2.new(1, 0, 0, 0)
         container.AutomaticSize = Enum.AutomaticSize.Y
-        container.BackgroundColor3 = T.SurfaceHigh
-        container.BackgroundTransparency = 0.35
+        container.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+        container.BackgroundTransparency = 0.72
         container.BorderSizePixel = 0
         container.ZIndex = 13
         container.LayoutOrder = tabObj._cnt
         corner(container, 8)
-        mkStroke(container, T.Border, 1, 0.5)
+        local paraStroke = Instance.new("UIStroke", container)
+        paraStroke.Color = Color3.fromRGB(110, 75, 200)
+        paraStroke.Thickness = 1
+        paraStroke.Transparency = 0.40
+        paraStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
         local pad = Instance.new("UIPadding", container)
         pad.PaddingAll = UDim.new(0, 10)
@@ -1698,7 +1888,8 @@ function Voidex:Notify(opts)
     notif.Name = "Notif"
     notif.Size = UDim2.new(0, 290, 0, 72)
     notif.Position = UDim2.new(1, 10, 0, yOff)
-    notif.BackgroundColor3 = T.Surface
+    notif.BackgroundColor3 = Color3.fromRGB(80, 40, 160)
+    notif.BackgroundTransparency = 0.72
     notif.BorderSizePixel = 0
     notif.ZIndex = 50
     notif.ClipsDescendants = true
@@ -1711,9 +1902,11 @@ function Voidex:Notify(opts)
     })
 
     gradFill(notif, {
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 12, 34)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(10,  7, 22)),
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(100, 55, 200)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB( 80, 40, 160)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB( 60, 28, 120)),
     }, 135)
+
 
     local aBar = Instance.new("Frame", notif)
     aBar.Size = UDim2.new(0, 3, 0.65, 0)
