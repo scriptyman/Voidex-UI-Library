@@ -231,3 +231,58 @@ Tab:CreateToggle({
         print(v)
     end
 })
+
+---
+
+VOIDEX UI LIBRARY V4 - API ADDITIONS
+=====================================
+
+Voidex.new() - New Config Options
+-----------------------------------
+
+ColorPicker
+  Tints the entire UI to a custom colour. Every shade of purple across
+  backgrounds, gradients, strokes, separators, borders, hover states,
+  scrollbars, particles and indicators is derived from this hue.
+  Usage: ColorPicker = "#0ea5e9"
+  Accepts: any hex string with or without #, e.g. "#FF0000", "FF0000", "#f00"
+  Aliases: WindowColor, WinColor, BgColor, BackgroundColor, ColorHex,
+           and colour-spelt variants of each
+
+FontColor
+  Overrides all text and font colours across the entire UI. Automatically
+  derives three tints: primary (100%), sub (80% brightness), muted (62%).
+  Usage: FontColor = "#ffffff"
+  Accepts: any hex string
+  Aliases: FontColour, TextColor, TextColour, LabelColor, LabelColour, FontHex
+
+LoadingTitle
+  Replaces "VOIDEX" on the loading screen.
+  Usage: LoadingTitle = "PHANTOM"
+  Aliases: LoadTitle, LoadText, ScreenTitle
+
+LoadingSubtitle
+  Replaces "U I    L I B R A R Y" on the loading screen.
+  Usage: LoadingSubtitle = "initialising..."
+  Aliases: LoadingSubtitle, LoadSub, LoadSubText, ScreenSub
+
+
+Defaults
+---------
+ColorPicker    - not set: original purple theme used, nothing changes
+FontColor      - not set: text is auto-derived as a light tint of the
+                 ColorPicker hue, or original T.White / T.TextMuted if
+                 no ColorPicker is set either
+LoadingTitle   - not set: shows "VOIDEX"
+LoadingSubtitle - not set: shows "U I    L I B R A R Y"
+
+
+Example
+--------
+local Window = Voidex.new({
+    Name            = "Phantom Hub",
+    ColorPicker     = "#0ea5e9",
+    FontColor       = "#ffffff",
+    LoadingTitle    = "PHANTOM",
+    LoadingSubtitle = "initialising...",
+})
